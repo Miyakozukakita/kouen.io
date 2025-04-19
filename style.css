@@ -1,45 +1,52 @@
 body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Arial', sans-serif;
-  text-align: center;
-  background-color: #fff;
+  font-family: sans-serif;
+  background-color: #f7f7f7;
+  padding: 20px;
 }
 
 .container {
-  padding: 40px;
+  max-width: 500px;
+  margin: auto;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  text-align: center;
 }
 
-button#water-btn {
-  font-size: 36px;
-  padding: 16px 40px;
-  border-radius: 12px;
+#water-btn {
+  font-size: 1.5rem;
+  padding: 10px 30px;
+  margin-top: 20px;
   background-color: #4CAF50;
   color: white;
   border: none;
+  border-radius: 5px;
   cursor: pointer;
-  margin-bottom: 40px;
+}
+
+#water-btn:hover {
+  background-color: #45a049;
 }
 
 .record-block {
-  font-size: 28px;
+  margin-top: 20px;
+  text-align: left;
 }
 
 .record-row {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin: 20px 0;
+  font-size: 1.8rem;
+  margin: 6px 0;
 }
 
 .label {
   font-weight: bold;
-  margin-right: 20px;
-  font-size: 36px;
+  width: 100px;
 }
 
 .time {
-  font-size: 36px;
   font-family: monospace;
-  letter-spacing: 12px;
+  font-size: 1.8rem;
 }
