@@ -1,6 +1,7 @@
-// script.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteField
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBR7AMsGD3P0lUfjvRHCHjMG3XmK12K4IU",
@@ -16,14 +17,21 @@ const db = getFirestore(app);
 
 let waterTimes = [];
 const maxCount = 10;
-let selectedDate = new Date().toISOString().split('T')[0];
+let selectedDate = getTodayStr();  // 初期は今日
 
-function displaySelectedDate() {
-  const dateObj = new Date(selectedDate);
-  const displayStr = dateObj.toLocaleDateString('ja-JP', {
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatJapaneseDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('ja-JP', {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
   });
-  document.getElementById('current-date').textContent = `表示日: ${displayStr}`;
+}
+
+function displaySelectedDate() {
+  document.getElementById('current-date').textContent = `表示日: ${formatJapaneseDate(selectedDate)}`;
 }
 
 async function recordWaterTime() {
@@ -106,7 +114,8 @@ async function saveAllTimes() {
   for (let i = 1; i <= maxCount; i++) {
     clearData[`time${i}`] = deleteField();
   }
-  await updateDoc(docRef, clearData);
+
+  await updateDoc(docRef, clearData).catch(() => {});
   await setDoc(docRef, data, { merge: true });
 }
 
@@ -114,39 +123,31 @@ async function loadWaterTimes() {
   const docRef = doc(db, "water-records", selectedDate);
   const docSnap = await getDoc(docRef);
 
+  waterTimes = [];
+
   if (docSnap.exists()) {
     const data = docSnap.data();
-    waterTimes = [];
     for (let i = 1; i <= maxCount; i++) {
       const key = `time${i}`;
       if (data[key]) {
         waterTimes.push(data[key]);
       }
     }
-  } else {
-    waterTimes = [];
   }
   renderRecords();
   displaySelectedDate();
 }
 
-function changeDateBy(days) {
-  const dateObj = new Date(selectedDate);
-  dateObj.setDate(dateObj.getDate() + days);
-  selectedDate = dateObj.toISOString().split('T')[0];
-  document.getElementById("date-picker").value = selectedDate;
-  loadWaterTimes();
-}
-
 window.onload = () => {
-  document.getElementById("water-btn").addEventListener("click", recordWaterTime);
-  document.getElementById("date-picker").addEventListener("change", (e) => {
-    selectedDate = e.target.value;
-    loadWaterTimes();
-  });
-  document.getElementById("prev-day").addEventListener("click", () => changeDateBy(-1));
-  document.getElementById("next-day").addEventListener("click", () => changeDateBy(1));
+  const picker = document.getElementById("date-picker");
+  picker.value = selectedDate;
 
-  document.getElementById("date-picker").value = selectedDate;
+  picker.addEventListener("change", async (e) => {
+    selectedDate = e.target.value;
+    await loadWaterTimes();
+  });
+
+  document.getElementById("water-btn").addEventListener("click", recordWaterTime);
+
   loadWaterTimes();
 };
