@@ -59,7 +59,13 @@ async function recordWaterTime() {
 
   await setDoc(docRef, data, { merge: true });
 }
-
+function displayToday() {
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('ja-JP', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+  });
+  document.getElementById('current-date').textContent = `本日: ${todayStr}`;
+}
 // 初期処理
 window.onload = () => {
   displayToday();
