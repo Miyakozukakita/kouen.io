@@ -68,3 +68,12 @@ async function recordTime(type) {
     console.error("データ保存エラー:", error);
   }
 }
+
+window.onload = () => {
+  displayToday();
+  loadTimes();
+
+  // イベントリスナー追加
+  document.getElementById("start-btn").addEventListener("click", () => recordTime("start"));
+  document.getElementById("end-btn").addEventListener("click", () => recordTime("end"));
+};
