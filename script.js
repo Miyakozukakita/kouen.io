@@ -1,4 +1,3 @@
-// Firebase SDKをモジュールとして読み込む
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
@@ -17,57 +16,52 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 今日の日付を表示
-function displayToday() {
+// 現在の時刻を取得
+function getTimeStr() {
   const now = new Date();
-  const todayStr = now.toLocaleDateString('ja-JP', {
-    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+  return now.toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
-  document.getElementById('current-date').textContent = `本日: ${todayStr}`;
 }
 
-// Firestoreから時刻読み込み
-async function loadTimes() {
-  const todayStr = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
-  const docRef = doc(db, "work-times", todayStr);
+// 今日の記録を取得
+async function loadWaterTimes() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const docRef = doc(db, "water-times", todayStr);
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
     const data = docSnap.data();
-    if (data.start) document.getElementById('start-time').textContent = data.start;
-    if (data.end) document.getElementById('end-time').textContent = data.end;
+    if (data.time1) document.getElementById("time1").textContent = data.time1;
+    if (data.time2) document.getElementById("time2").textContent = data.time2;
+  }
+}
+
+// ボタンイベント
+async function recordWaterTime() {
+  const now = getTimeStr();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const docRef = doc(db, "water-times", todayStr);
+  const docSnap = await getDoc(docRef);
+  const data = docSnap.exists() ? docSnap.data() : {};
+
+  if (!data.time1) {
+    data.time1 = now;
+    document.getElementById("time1").textContent = now;
+  } else if (!data.time2) {
+    data.time2 = now;
+    document.getElementById("time2").textContent = now;
   } else {
-    console.log("No data for today.");
+    alert("今日はすでに2回記録されています。");
+    return;
   }
+
+  await setDoc(docRef, data, { merge: true });
 }
 
-// 出勤 or 退勤を記録
-async function recordTime(type) {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('ja-JP', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-
-  const todayStr = now.toISOString().split('T')[0];
-  const docRef = doc(db, "work-times", todayStr);
-
-  try {
-    await setDoc(docRef, {
-      date: todayStr,
-      [type]: timeStr,
-    }, { merge: true });
-
-    document.getElementById(`${type}-time`).textContent = timeStr;
-  } catch (error) {
-    console.error("データ保存エラー:", error);
-  }
-}
-
+// 初期処理
 window.onload = () => {
-  displayToday();
-  loadTimes();
-
-  // イベントリスナー追加
-  document.getElementById("start-btn").addEventListener("click", () => recordTime("start"));
-  document.getElementById("end-btn").addEventListener("click", () => recordTime("end"));
+  loadWaterTimes();
+  document.getElementById("water-btn").addEventListener("click", recordWaterTime);
 };
