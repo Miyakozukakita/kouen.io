@@ -17,12 +17,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ページ読み込み時の処理
-window.onload = () => {
-  displayToday();
-  loadTimes();
-};
-
 // 今日の日付を表示
 function displayToday() {
   const now = new Date();
