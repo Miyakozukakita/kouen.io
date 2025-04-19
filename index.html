@@ -1,26 +1,63 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>出勤・退勤打刻システム</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>水やり記録</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    button {
+      font-size: 24px;
+      padding: 10px 30px;
+      border-radius: 10px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    .record {
+      margin-top: 40px;
+      font-size: 32px;
+    }
+    .entry {
+      margin: 10px 0;
+    }
+    .time {
+      font-weight: bold;
+      margin-left: 10px;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1 id="current-date">本日の日付</h1>
+  <button onclick="recordWatering()">【水やり完了】</button>
 
-<div class="button-block">
-  <button id="start-btn">出勤</button>
-  <p class="time-display" id="start-time">--:--</p>
-</div>
+  <div class="record">
+    <div class="entry">1回目 <span id="time1" class="time">○○：○○</span></div>
+    <div class="entry">2回目 <span id="time2" class="time">○○：○○</span></div>
+  </div>
 
-<div class="button-block">
-  <button id="end-btn">退勤</button>
-  <p class="time-display" id="end-time">--:--</p>
-</div>
+  <script>
+    let count = 0;
 
-  <!-- Firebase設定（後で貼り付ける） -->
-  <script type="module" src="script.js"></script>
+    function recordWatering() {
+      const now = new Date();
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      const timeString = `${hour}:${minute}`;
+
+      if (count === 0) {
+        document.getElementById("time1").textContent = timeString;
+        count++;
+      } else if (count === 1) {
+        document.getElementById("time2").textContent = timeString;
+        count++;
+      } else {
+        alert("今日はもう記録済みです！");
+      }
+    }
+  </script>
 </body>
 </html>
