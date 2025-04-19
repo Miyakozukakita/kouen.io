@@ -17,12 +17,11 @@ const db = getFirestore(app);
 let waterTimes = [];
 const maxCount = 10;
 
-function displayToday() {
-  const now = new Date();
-  const todayStr = now.toLocaleDateString('ja-JP', {
+function displayToday(date = new Date()) {
+  const todayStr = date.toLocaleDateString('ja-JP', {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
   });
-  document.getElementById('current-date').textContent = `本日: ${todayStr}`;
+  document.getElementById('current-date').textContent = `表示日: ${todayStr}`;
 }
 
 async function recordWaterTime() {
@@ -93,27 +92,27 @@ async function deleteTime(index) {
   renderRecords();
 }
 
-async function saveAllTimes() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const docRef = doc(db, "water-records", todayStr);
+async function saveAllTimes(date = new Date()) {
+  const dateStr = date.toISOString().split('T')[0];
+  const docRef = doc(db, "water-records", dateStr);
 
   const data = {};
   waterTimes.forEach((timeStr, i) => {
     data[`time${i + 1}`] = timeStr;
   });
 
-  // 以前の10件をすべて削除し、現在の内容を保存
   const clearData = {};
   for (let i = 1; i <= maxCount; i++) {
     clearData[`time${i}`] = deleteField();
   }
+
   await updateDoc(docRef, clearData);
   await setDoc(docRef, data, { merge: true });
 }
 
-async function loadWaterTimes() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const docRef = doc(db, "water-records", todayStr);
+async function loadWaterTimes(date = new Date()) {
+  const dateStr = date.toISOString().split('T')[0];
+  const docRef = doc(db, "water-records", dateStr);
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
@@ -126,11 +125,24 @@ async function loadWaterTimes() {
       }
     }
     renderRecords();
+  } else {
+    waterTimes = [];
+    renderRecords();
   }
+}
+
+function setupDatePicker() {
+  const input = document.getElementById("date-picker");
+  input.addEventListener("change", async () => {
+    const selectedDate = new Date(input.value);
+    displayToday(selectedDate);
+    await loadWaterTimes(selectedDate);
+  });
 }
 
 window.onload = () => {
   displayToday();
   loadWaterTimes();
+  setupDatePicker();
   document.getElementById("water-btn").addEventListener("click", recordWaterTime);
 };
