@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let count = 0;
+let waterTimes = [];
 const maxCount = 10;
 
 function displayToday() {
@@ -26,7 +26,7 @@ function displayToday() {
 }
 
 async function recordWaterTime() {
-  if (count >= maxCount) {
+  if (waterTimes.length >= maxCount) {
     alert("今日はすでに10回水やりしています。");
     return;
   }
@@ -36,77 +36,79 @@ async function recordWaterTime() {
     hour: '2-digit', minute: '2-digit'
   });
 
-  count++;
-  addRecordRow(count, timeStr);
-
-  const todayStr = now.toISOString().split('T')[0];
-  const docRef = doc(db, "water-records", todayStr);
-
-  try {
-    const data = {};
-    data[`time${count}`] = timeStr;
-    await setDoc(docRef, data, { merge: true });
-  } catch (err) {
-    console.error("データ保存失敗", err);
-  }
+  waterTimes.push(timeStr);
+  await saveAllTimes();
+  renderRecords();
 }
 
-function addRecordRow(num, timeStr) {
+function renderRecords() {
   const recordBlock = document.getElementById("records");
+  recordBlock.innerHTML = "";
 
-  const row = document.createElement("div");
-  row.className = "record-row";
-  row.id = `row-${num}`;
+  waterTimes.forEach((timeStr, index) => {
+    const num = index + 1;
+    const row = document.createElement("div");
+    row.className = "record-row";
+    row.id = `row-${num}`;
 
-  const label = document.createElement("span");
-  label.className = "label";
-  label.textContent = `${num}回目`;
+    const label = document.createElement("span");
+    label.className = "label";
+    label.textContent = `${num}回目`;
 
-  const time = document.createElement("span");
-  time.className = "time";
-  time.textContent = timeStr;
-  time.id = `time-${num}`;
+    const time = document.createElement("span");
+    time.className = "time";
+    time.textContent = timeStr;
+    time.id = `time-${num}`;
 
-  const editBtn = document.createElement("button");
-  editBtn.textContent = "修正";
-  editBtn.style.marginLeft = "10px";
-  editBtn.onclick = () => editTime(num);
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "修正";
+    editBtn.style.marginLeft = "10px";
+    editBtn.onclick = () => editTime(num - 1);
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "削除";
-  deleteBtn.style.marginLeft = "5px";
-  deleteBtn.onclick = () => deleteTime(num);
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "削除";
+    deleteBtn.style.marginLeft = "5px";
+    deleteBtn.onclick = () => deleteTime(num - 1);
 
-  row.appendChild(label);
-  row.appendChild(time);
-  row.appendChild(editBtn);
-  row.appendChild(deleteBtn);
-  recordBlock.appendChild(row);
+    row.appendChild(label);
+    row.appendChild(time);
+    row.appendChild(editBtn);
+    row.appendChild(deleteBtn);
+    recordBlock.appendChild(row);
+  });
 }
 
-async function editTime(num) {
-  const newTime = prompt("新しい時間を入力してください（例: 14:30）");
+async function editTime(index) {
+  const newTime = prompt("新しい時間を入力してください（例: 14:30）", waterTimes[index]);
   if (!newTime) return;
-
-  document.getElementById(`time-${num}`).textContent = newTime;
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const docRef = doc(db, "water-records", todayStr);
-  const data = {};
-  data[`time${num}`] = newTime;
-  await setDoc(docRef, data, { merge: true });
+  waterTimes[index] = newTime;
+  await saveAllTimes();
+  renderRecords();
 }
 
-async function deleteTime(num) {
+async function deleteTime(index) {
   if (!confirm("この記録を削除しますか？")) return;
+  waterTimes.splice(index, 1);
+  await saveAllTimes();
+  renderRecords();
+}
 
-  document.getElementById(`row-${num}`).remove();
-
+async function saveAllTimes() {
   const todayStr = new Date().toISOString().split('T')[0];
   const docRef = doc(db, "water-records", todayStr);
-  const update = {};
-  update[`time${num}`] = deleteField();
-  await updateDoc(docRef, update);
+
+  const data = {};
+  waterTimes.forEach((timeStr, i) => {
+    data[`time${i + 1}`] = timeStr;
+  });
+
+  // 以前の10件をすべて削除し、現在の内容を保存
+  const clearData = {};
+  for (let i = 1; i <= maxCount; i++) {
+    clearData[`time${i}`] = deleteField();
+  }
+  await updateDoc(docRef, clearData);
+  await setDoc(docRef, data, { merge: true });
 }
 
 async function loadWaterTimes() {
@@ -116,13 +118,14 @@ async function loadWaterTimes() {
 
   if (docSnap.exists()) {
     const data = docSnap.data();
+    waterTimes = [];
     for (let i = 1; i <= maxCount; i++) {
       const key = `time${i}`;
       if (data[key]) {
-        count++;
-        addRecordRow(i, data[key]);
+        waterTimes.push(data[key]);
       }
     }
+    renderRecords();
   }
 }
 
