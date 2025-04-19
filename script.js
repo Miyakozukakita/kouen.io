@@ -11,7 +11,7 @@ const firebaseConfig = {
     measurementId: "G-3N56F9MCSG"
 };
 
-// Firebaseを初期化
+// Firebaseを初期化aa
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore(app);
 
