@@ -3,24 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>出勤・退勤打刻システム</title>
+  <title>水やり記録システム</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1 id="current-date">本日の日付</h1>
+    <button id="water-btn">【水やり完了】</button>
 
-<div class="button-block">
-  <button id="start-btn">出勤</button>
-  <p class="time-display" id="start-time">--:--</p>
-</div>
+    <div class="record-block">
+      <div class="record-row">
+        <span class="label">1回目</span>
+        <span class="time" id="time1">〇〇：〇〇</span>
+      </div>
+      <div class="record-row">
+        <span class="label">2回目</span>
+        <span class="time" id="time2">〇〇：〇〇</span>
+      </div>
+    </div>
+  </div>
 
-<div class="button-block">
-  <button id="end-btn">退勤</button>
-  <p class="time-display" id="end-time">--:--</p>
-</div>
-
-  <!-- Firebase設定（後で貼り付ける） -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
