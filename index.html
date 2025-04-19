@@ -1,11 +1,31 @@
-<div class="buttons">
-  <div class="button-block">
-    <button onclick="recordTime('start')">出勤</button>
-    <p class="time-display" id="start-time">--:--</p>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>出勤・退勤打刻システム</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1 id="current-date">本日の日付</h1>
+
+    <div class="button-block">
+      <button onclick="recordTime('start')">出勤</button>
+      <p class="time-display" id="start-time">--:--</p>
+    </div>
+
+    <div class="button-block">
+      <button onclick="recordTime('end')">退勤</button>
+      <p class="time-display" id="end-time">--:--</p>
+    </div>
   </div>
 
-  <div class="button-block">
-    <button onclick="recordTime('end')">退勤</button>
-    <p class="time-display" id="end-time">--:--</p>
-  </div>
-</div>
+  <!-- Firebase SDKを読み込む -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+  <!-- Firebase設定（後で貼り付ける） -->
+  <script src="script.js"></script>
+</body>
+</html>
