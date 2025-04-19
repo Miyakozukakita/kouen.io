@@ -10,16 +10,15 @@
   <div class="container">
     <h1 id="current-date">本日の日付</h1>
 
-    <div class="button-block">
-      <button onclick="recordTime('start')">出勤</button>
-      <p class="time-display" id="start-time">--:--</p>
-    </div>
+<div class="button-block">
+  <button id="start-btn">出勤</button>
+  <p class="time-display" id="start-time">--:--</p>
+</div>
 
-    <div class="button-block">
-      <button onclick="recordTime('end')">退勤</button>
-      <p class="time-display" id="end-time">--:--</p>
-    </div>
-  </div>
+<div class="button-block">
+  <button id="end-btn">退勤</button>
+  <p class="time-display" id="end-time">--:--</p>
+</div>
 
   <!-- Firebase設定（後で貼り付ける） -->
   <script type="module" src="script.js"></script>
