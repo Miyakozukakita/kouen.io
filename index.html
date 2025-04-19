@@ -3,31 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>水やり記録システム</title>
+  <title>水やり記録</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-
-    <!-- 本日の日付を表示 -->
     <h2 id="current-date">本日の日付</h2>
-
-    <!-- 水やり完了ボタン -->
     <button id="water-btn">【水やり完了】</button>
-
-    <!-- 記録表示 -->
-    <div class="record-block">
-      <div class="record-row">
-        <span class="label">1回目</span>
-        <span class="time" id="time1">〇〇：〇〇</span>
-      </div>
-      <div class="record-row">
-        <span class="label">2回目</span>
-        <span class="time" id="time2">〇〇：〇〇</span>
-      </div>
-    </div>
+    <div id="records" class="record-block"></div>
   </div>
-
   <script type="module" src="script.js"></script>
 </body>
 </html>
