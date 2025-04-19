@@ -3,15 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>水やり記録</title>
+  <title>水やり記録アプリ</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h2 id="current-date">本日の日付</h2>
-    <button id="water-btn">【水やり完了】</button>
-    <div id="records" class="record-block"></div>
+    <h1 id="current-date">本日: </h1>
+
+    <div class="date-select">
+      <label for="date-picker">表示する日付：</label>
+      <input type="date" id="date-picker" />
+    </div>
+
+    <div class="button-block">
+      <button id="water-btn">水やり完了</button>
+    </div>
+
+    <div id="records"></div>
   </div>
+
   <script type="module" src="script.js"></script>
 </body>
 </html>
