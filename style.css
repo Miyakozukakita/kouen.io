@@ -1,37 +1,45 @@
 body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f4f4f4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
   margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  background-color: #fff;
 }
 
 .container {
-  background-color: white;
-  padding: 30px 40px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  text-align: center;
+  padding: 40px;
 }
 
-h1 {
-  margin-bottom: 20px;
-}
-
-.button-block {
-  margin-bottom: 20px;
-}
-
-.button-block button {
-  padding: 10px 20px;
-  font-size: 16px;
+button#water-btn {
+  font-size: 36px;
+  padding: 16px 40px;
+  border-radius: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
   cursor: pointer;
+  margin-bottom: 40px;
 }
 
-.time-display {
-  margin-top: 8px;
-  font-size: 18px;
-  color: #333;
+.record-block {
+  font-size: 28px;
+}
+
+.record-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.label {
+  font-weight: bold;
+  margin-right: 20px;
+  font-size: 36px;
+}
+
+.time {
+  font-size: 36px;
+  font-family: monospace;
+  letter-spacing: 12px;
 }
