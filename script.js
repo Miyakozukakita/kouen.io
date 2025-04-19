@@ -62,6 +62,7 @@ async function recordWaterTime() {
 
 // 初期処理
 window.onload = () => {
+  displayToday();
   loadWaterTimes();
   document.getElementById("water-btn").addEventListener("click", recordWaterTime);
 };
