@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/send-line",
+        "function": "sendLineMessage"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
