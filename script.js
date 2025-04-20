@@ -20,7 +20,9 @@ const maxCount = 10;
 let selectedDate = getTodayStr();  // 初期は今日
 
 function getTodayStr() {
-  return new Date().toISOString().split('T')[0];
+  const now = new Date();
+  now.setHours(now.getHours() + 9); // UTC→JST変換
+  return now.toISOString().split('T')[0];
 }
 
 function formatJapaneseDate(dateStr) {
