@@ -3,6 +3,10 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteField
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
+// LINE設定（ローカルでのみ使用・セキュリティ注意）
+const LINE_ACCESS_TOKEN = 'IR54C6+5BAgTTgnZiAwh8kGuCi+3zqzw5jCm4jknpBHz22WPtUp1xXVWnrkDf/NijNoWMwecM3YGT+qvz84Vaau8XdHSD6SXA/JrGIOu7WSQC+xGhAnQcGV5a6rg7lcyzjNZypS0Bn4A9LxLq2uOUgdB04t89/1O/w1cDnyilFU=';
+const LINE_GROUP_ID = 'Cf22d3ef700a771c636ff04120cc57fbc';
+
 const firebaseConfig = {
   apiKey: "AIzaSyBR7AMsGD3P0lUfjvRHCHjMG3XmK12K4IU",
   authDomain: "miyakozuka-89982.firebaseapp.com",
@@ -50,6 +54,7 @@ async function recordWaterTime() {
   waterTimes.push(timeStr);
   await saveAllTimes();
   renderRecords();
+  await sendLineMessage("水やりしました🌱");
 }
 
 function renderRecords() {
@@ -153,3 +158,32 @@ window.onload = () => {
 
   loadWaterTimes();
 };
+
+// LINE Messaging API に通知を送信
+async function sendLineMessage(message) {
+  const body = {
+    to: LINE_GROUP_ID,
+    messages: [
+      {
+        type: "text",
+        text: message
+      }
+    ]
+  };
+
+  const res = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${LINE_ACCESS_TOKEN}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    console.error("LINE送信失敗:", error);
+  } else {
+    console.log("LINE送信成功");
+  }
+}
