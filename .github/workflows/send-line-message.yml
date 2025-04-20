@@ -1,78 +1,17 @@
-name: LINE Water Check Notification
+- name: Get water record via frontend
+  run: |
+    TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
+    echo "📅 今日の日付（JST）: $TODAY"
 
-on:
-  schedule:
-    - cron: '0 0 * * *'  # JST 9:00
-  workflow_dispatch:
+    RESPONSE=$(curl -s https://miyakozuka-89982.web.app/data.json)
+    echo "🧾 レスポンス:"
+    echo "$RESPONSE" | jq .
 
-jobs:
-  notify-if-no-water:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Firestore and notify LINE
-        env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
-        run: |
-          echo "▶ 開始：Firestore から水やり記録を確認"
+    HAS_TIME1=$(echo "$RESPONSE" | jq -r '.time1 // empty')
 
-          TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
-          echo "📅 今日の日付（JST）: $TODAY"
-
-          HEADER='{
-            "alg": "RS256",
-            "typ": "JWT"
-          }'
-
-          NOW=$(date +%s)
-          EXP=$(($NOW + 3600))
-
-          CLAIM='{
-            "iss": "'"$FIREBASE_CLIENT_EMAIL"'",
-            "sub": "'"$FIREBASE_CLIENT_EMAIL"'",
-            "aud": "https://firestore.googleapis.com/",
-            "iat": '"$NOW"',
-            "exp": '"$EXP"',
-            "scope": "https://www.googleapis.com/auth/datastore"
-          }'
-
-          b64enc() { openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
-
-          JWT_HEADER=$(echo -n "$HEADER" | b64enc)
-          JWT_CLAIM=$(echo -n "$CLAIM" | b64enc)
-          JWT_UNSIGNED="$JWT_HEADER.$JWT_CLAIM"
-
-          echo "$FIREBASE_PRIVATE_KEY" > private_key.pem
-          JWT_SIGNATURE=$(echo -n "$JWT_UNSIGNED" | openssl dgst -sha256 -sign private_key.pem | b64enc)
-          JWT="$JWT_UNSIGNED.$JWT_SIGNATURE"
-
-          echo "🔑 JWT 作成完了"
-
-          ACCESS_TOKEN=$(curl -s -X POST https://oauth2.googleapis.com/token \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$JWT" \
-            | jq -r '.access_token')
-
-          echo "🔓 アクセストークン取得済み"
-
-          FIRESTORE_URL="https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/water-records/$TODAY"
-          echo "📡 Firestore ドキュメント取得: $FIRESTORE_URL"
-
-          RESPONSE=$(curl -s -X GET "$FIRESTORE_URL" \
-            -H "Authorization: Bearer $JWT")
-
-          echo "🧾 Firestore レスポンス:"
-          echo "$RESPONSE" | jq .
-
-          HAS_TIME1=$(echo "$RESPONSE" | jq -r '.fields.time1.stringValue // empty')
-
-          if [ -n "$HAS_TIME1" ]; then
-            echo "✅ 水やり済み記録を確認（time1: $HAS_TIME1）"
-          else
-            echo "❌ time1 が見つかりません！LINEへ通知します。"
-          fi
-
-          echo "✅ 処理完了"
+    if [ -n "$HAS_TIME1" ]; then
+      echo "✅ 水やり済み記録を確認（time1: $HAS_TIME1）"
+    else
+      echo "❌ time1 が見つかりません！LINEへ通知します。"
+      # ↓ LINE通知処理をここに
+    fi
