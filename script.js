@@ -161,15 +161,21 @@ window.onload = () => {
 
 // LINE Messaging API に通知を送信
 async function sendLineMessage(message) {
-  const body = {
-    to: LINE_GROUP_ID,
-    messages: [
-      {
-        type: "text",
-        text: message
-      }
-    ]
-  };
+  try {
+    const res = await fetch("https://miyakozukakita.github.io/notify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message })
+    });
+
+    if (!res.ok) throw new Error("送信失敗");
+    console.log("通知成功");
+  } catch (err) {
+    console.error("通知エラー:", err);
+  }
+}
 
   const res = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
