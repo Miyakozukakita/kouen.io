@@ -108,7 +108,6 @@ jobs:
               if [ "$TEMP_AT_14" != "null" ] && [ "$WEATHER_CODE_AT_14" != "null" ]; then
                 if [ "$(echo "$TEMP_AT_14 >= 30" | bc)" -eq 1 ] && [[ "$WEATHER_CODE_AT_14" =~ ^(0|1|2)$ ]]; then
                   echo "☀️ 暑くて晴れ → 水やりが必要。LINE通知を送信します"
-                    }'
                 else
                   echo "☁️ 暑くない or 晴れじゃない → 水やり不要。LINE通知を送信します"
 
