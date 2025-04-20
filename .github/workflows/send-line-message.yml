@@ -1,17 +1,32 @@
-- name: Get water record via frontend
-  run: |
-    TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
-    echo "📅 今日の日付（JST）: $TODAY"
+name: LINE Water Check Notification
 
-    RESPONSE=$(curl -s https://miyakozuka-89982.web.app/data.json)
-    echo "🧾 レスポンス:"
-    echo "$RESPONSE" | jq .
+on:
+  schedule:
+    - cron: '0 0 * * *'  # JST 9:00 に実行（UTC 0:00）
+  workflow_dispatch:
 
-    HAS_TIME1=$(echo "$RESPONSE" | jq -r '.time1 // empty')
+jobs:
+  notify-if-no-water:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check data.json and notify LINE
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
+        run: |
+          echo "▶ 開始：data.json を確認"
 
-    if [ -n "$HAS_TIME1" ]; then
-      echo "✅ 水やり済み記録を確認（time1: $HAS_TIME1）"
-    else
-      echo "❌ time1 が見つかりません！LINEへ通知します。"
-      # ↓ LINE通知処理をここに
-    fi
+          RESPONSE=$(curl -s https://miyakozuka-89982.web.app/data.json)
+
+          echo "🧾 取得した JSON:"
+          echo "$RESPONSE" | jq .
+
+          HAS_TIME1=$(echo "$RESPONSE" | jq -r '.time1 // empty')
+
+          if [ -n "$HAS_TIME1" ]; then
+            echo "✅ 水やり記録あり（time1: $HAS_TIME1）"
+          else
+            echo "❌ time1 が見つかりません！LINEへ通知します。"
+          fi
+
+          echo "✅ 処理完了"
