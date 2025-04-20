@@ -1,0 +1,43 @@
+<!-- public/data.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Water Data API</title>
+</head>
+<body>
+<pre id="output">読み込み中...</pre>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc
+  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBR7AMsGD3P0lUfjvRHCHjMG3XmK12K4IU",
+    authDomain: "miyakozuka-89982.firebaseapp.com",
+    projectId: "miyakozuka-89982",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const today = new Date();
+  today.setHours(today.getHours() + 9); // JST
+  const todayStr = today.toISOString().split('T')[0];
+
+  const docRef = doc(db, "water-records", todayStr);
+  const docSnap = await getDoc(docRef);
+
+  const pre = document.getElementById("output");
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    pre.textContent = JSON.stringify(data);
+  } else {
+    pre.textContent = JSON.stringify({ error: "not found" });
+  }
+</script>
+</body>
+</html>
