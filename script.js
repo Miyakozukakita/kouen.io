@@ -52,7 +52,7 @@ async function recordWaterTime() {
   renderRecords();
 
   // ✅ LINE通知を送信
-  fetch("https://YOUR_FUNCTIONS_URL/send-line", {
+  fetch("https://us-central1-miyakozuka-89982.cloudfunctions.net/send-line", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
