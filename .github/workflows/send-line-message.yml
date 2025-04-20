@@ -79,6 +79,19 @@ jobs:
             echo "✅ 水やり済み記録を確認（time1: $HAS_TIME1）"
           else
             echo "❌ time1 が見つかりません！LINEへ通知します。"
-          fi
+
+             curl -X POST https://api.line.me/v2/bot/message/push \
+               -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+               -H "Content-Type: application/json" \
+               -d '{
+                 "to": "'"$LINE_GROUP_ID"'",
+                 "messages": [
+                   {
+                     "type": "text",
+                     "text": "⚠️ 本日（'"$TODAY"'）の水やりが未記録です！"
+                   }
+                 ]
+               }'
+               fi
 
           echo "✅ 処理完了"
