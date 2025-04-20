@@ -5,6 +5,10 @@ on:
     - cron: '0 0 * * *'    # JST 9:00
     - cron: '0 8 * * *'    # JST 17:00
   workflow_dispatch:
+    inputs:
+      test_hour:
+        description: 'テスト用の擬似時刻 (例: 17)'
+        required: false
 
 jobs:
   notify-if-no-water:
@@ -16,17 +20,19 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
+          TEST_HOUR: ${{ github.event.inputs.test_hour }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
+          echo "▶ 開始：Firestoreと天気APIを確認"
 
+          TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
+          JST_HOUR=${TEST_HOUR:-$(date -u +"%H" -d "+9 hours")}
+          echo "📅 今日: $TODAY JST時刻: $JST_HOUR"
+
+          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
           FIREBASE_CLIENT_EMAIL=$(jq -r '.client_email' service-account.json)
           FIREBASE_PRIVATE_KEY=$(jq -r '.private_key' service-account.json)
 
-          HEADER='{
-            "alg": "RS256",
-            "typ": "JWT"
-          }'
-
+          HEADER='{"alg":"RS256","typ":"JWT"}'
           NOW=$(date +%s)
           EXP=$(($NOW + 3600))
 
@@ -54,78 +60,77 @@ jobs:
             -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$JWT" \
             | jq -r '.access_token')
 
-          TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
-          echo 'JST_HOUR=$(date -u +"%H" -d "+9 hours")'
-          JST_HOUR=17
-
-          TIME_FIELD="time1"
-          TIME_LABEL="午前"
-          CHECK_WEATHER=false
-
-          if [ "$JST_HOUR" -eq 17 ]; then
-            TIME_FIELD="time2"
-            TIME_LABEL="午後"
-            CHECK_WEATHER=true
-          fi
-
           FIRESTORE_URL="https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/water-records/$TODAY"
-
           RESPONSE=$(curl -s -X GET "$FIRESTORE_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN")
 
-          TIME_VALUE=$(echo "$RESPONSE" | jq -r ".fields.$TIME_FIELD.stringValue // empty")
+          echo "🧾 Firestore レスポンス:"
+          echo "$RESPONSE" | jq .
 
-          WEATHER_CONDITION_OK=false
-          TEMP_AT_14=""
-          WEATHER_CODE_AT_14=""
+          HAS_TIME1=$(echo "$RESPONSE" | jq -r '.fields.time1.stringValue // empty')
+          HAS_TIME2=$(echo "$RESPONSE" | jq -r '.fields.time2.stringValue // empty')
 
-          if [ "$CHECK_WEATHER" = true ]; then
-            echo "🌦️ 夕方チェック：14時の天気と気温を確認します"
-
-            WEATHER_RESPONSE=$(curl -s "https://archive-api.open-meteo.com/v1/archive?latitude=34.6264&longitude=135.6009&start_date=$TODAY&end_date=$TODAY&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo")
-            TEMP_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.temperature_2m[14]')
-            WEATHER_CODE_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.weathercode[14]')
-
-            echo "🌡️ 14時の気温: ${TEMP_AT_14}℃"
-            echo "🌤️ 14時の天気コード: $WEATHER_CODE_AT_14"
-
-            if [ "$TEMP_AT_14" != "null" ] && [ "$WEATHER_CODE_AT_14" -eq 0 ] && [ "$(printf "%.0f" "$TEMP_AT_14")" -ge 30 ]; then
-              WEATHER_CONDITION_OK=true
+          if [ "$JST_HOUR" -eq 9 ]; then
+            if [ -n "$HAS_TIME1" ]; then
+              echo "✅ 朝の水やり（time1）記録あり: $HAS_TIME1"
             else
-              WEATHER_CONDITION_OK=false
+              echo "❌ 朝の水やり記録なし。LINE通知を送信します"
+              curl -X POST https://api.line.me/v2/bot/message/push \
+                -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "to": "'"$LINE_GROUP_ID"'",
+                  "messages": [
+                    {
+                      "type": "text",
+                      "text": "⚠️ 本日（'"$TODAY"'）の朝の水やりが未記録です！"
+                    }
+                  ]
+                }'
             fi
-          fi
+          elif [ "$JST_HOUR" -eq 17 ]; then
+            if [ -n "$HAS_TIME2" ]; then
+              echo "✅ 夕方の水やり（time2）記録あり: $HAS_TIME2"
+            else
+              echo "❌ 夕方の水やり記録なし。天気と気温を確認します"
 
-          if [ -n "$TIME_VALUE" ]; then
-            echo "✅ ${TIME_LABEL}の水やり記録あり（${TIME_FIELD}: $TIME_VALUE）"
+              # 八尾市：緯度経度
+              LAT="34.6264"
+              LON="135.6009"
+
+              WEATHER_RESPONSE=$(curl -s "https://api.open-meteo.com/v1/forecast?latitude=$LAT&longitude=$LON&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo&forecast_days=1")
+              TEMP_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.temperature_2m[14]')
+              WEATHER_CODE_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.weathercode[14]')
+
+              echo "🌡️ 14時の気温: ${TEMP_AT_14}℃"
+              echo "🌤️ 14時の天気コード: ${WEATHER_CODE_AT_14}"
+
+              if [ "$TEMP_AT_14" != "null" ] && [ "$WEATHER_CODE_AT_14" != "null" ]; then
+                if [ "$(echo "$TEMP_AT_14 >= 30" | bc)" -eq 1 ] && [[ "$WEATHER_CODE_AT_14" =~ ^(0|1|2)$ ]]; then
+                  echo "☀️ 暑くて晴れ → 水やりが必要。LINE通知を送信します"
+                    }'
+                else
+                  echo "☁️ 暑くない or 晴れじゃない → 水やり不要。LINE通知を送信します"
+
+                  curl -X POST https://api.line.me/v2/bot/message/push \
+                    -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d '{
+                      "to": "'"$LINE_GROUP_ID"'",
+                      "messages": [
+                        {
+                          "type": "text",
+                          "text": "本日（'"$TODAY"'）の14時は晴れ（'"$TEMP_AT_14"'℃）のため、水やりの必要はありませんでした☀️"
+                        }
+                      ]
+                    }'
+                fi
+              else
+                echo "⚠️ 天気データが取得できなかったため、通知をスキップします"
+              fi
+            fi
           else
-            if [ "$JST_HOUR" -eq 17 ] && [ "$WEATHER_CONDITION_OK" = false ]; then
-              curl -X POST https://api.line.me/v2/bot/message/push \
-                -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d '{
-                  "to": "'"$LINE_GROUP_ID"'",
-                  "messages": [
-                    {
-                      "type": "text",
-                      "text": "✅ 本日（'"$TODAY"'）の14時は晴れ（'"$TEMP_AT_14"'℃）のため、水やりの必要はありませんでした☀️"
-                    }
-                  ]
-                }'
-            else
-              curl -X POST https://api.line.me/v2/bot/message/push \
-                -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d '{
-                  "to": "'"$LINE_GROUP_ID"'",
-                  "messages": [
-                    {
-                      "type": "text",
-                      "text": "⚠️ 本日（'"$TODAY"'）の'"$TIME_LABEL"'の水やりが未記録です！（14時は晴れ＆30℃以上）"
-                    }
-                  ]
-                }'
-            fi
+            echo "⏰ この時間（$JST_HOUR時）は何もしません"
           fi
 
           echo "✅ 処理完了"
