@@ -62,7 +62,7 @@ jobs:
           echo "📡 Firestore ドキュメント取得: $FIRESTORE_URL"
 
           RESPONSE=$(curl -s -X GET "$FIRESTORE_URL" \
-            -H "Authorization: Bearer $ACCESS_TOKEN")
+            -H "Authorization: Bearer $JWT")
 
           echo "🧾 Firestore レスポンス:"
           echo "$RESPONSE" | jq .
