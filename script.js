@@ -3,10 +3,6 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteField
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
-// LINE設定（ローカルでのみ使用・セキュリティ注意）
-const LINE_ACCESS_TOKEN = 'IR54C6+5BAgTTgnZiAwh8kGuCi+3zqzw5jCm4jknpBHz22WPtUp1xXVWnrkDf/NijNoWMwecM3YGT+qvz84Vaau8XdHSD6SXA/JrGIOu7WSQC+xGhAnQcGV5a6rg7lcyzjNZypS0Bn4A9LxLq2uOUgdB04t89/1O/w1cDnyilFU=';
-const LINE_GROUP_ID = 'Cf22d3ef700a771c636ff04120cc57fbc';
-
 const firebaseConfig = {
   apiKey: "AIzaSyBR7AMsGD3P0lUfjvRHCHjMG3XmK12K4IU",
   authDomain: "miyakozuka-89982.firebaseapp.com",
@@ -21,11 +17,11 @@ const db = getFirestore(app);
 
 let waterTimes = [];
 const maxCount = 10;
-let selectedDate = getTodayStr();  // 初期は今日
+let selectedDate = getTodayStr();
 
 function getTodayStr() {
   const now = new Date();
-  now.setHours(now.getHours() + 9); // UTC→JST変換
+  now.setHours(now.getHours() + 9);
   return now.toISOString().split('T')[0];
 }
 
@@ -54,6 +50,13 @@ async function recordWaterTime() {
   waterTimes.push(timeStr);
   await saveAllTimes();
   renderRecords();
+
+  // ✅ LINEに通知送信
+  fetch('/api/send-line', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `✅ ${timeStr} に水やりが完了しました` })
+  });
 }
 
 function renderRecords() {
@@ -157,4 +160,3 @@ window.onload = () => {
 
   loadWaterTimes();
 };
-
