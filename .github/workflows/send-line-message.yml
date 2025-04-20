@@ -1,0 +1,25 @@
+name: LINE Group Morning Message
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 毎朝9時(JST)に実行（UTC 0時）
+  workflow_dispatch:       # 手動実行もできるように
+
+jobs:
+  send-line-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send LINE message to group
+        run: |
+          curl -X POST https://api.line.me/v2/bot/message/push \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}" \
+          -d '{
+                "to": "${{ secrets.LINE_GROUP_ID }}",
+                "messages":[
+                  {
+                    "type":"text",
+                    "text":"🌱 おはようございます！水やりチェックお願いします！"
+                  }
+                ]
+              }'
