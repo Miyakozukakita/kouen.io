@@ -2,7 +2,8 @@ name: LINE Water Check Notification
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # JST 9:00
+    - cron: '0 0 * * *'   # JST 9:00
+    - cron: '0 8 * * *'   # JST 17:00
   workflow_dispatch:
 
 jobs:
@@ -18,22 +19,19 @@ jobs:
         run: |
           echo "▶ 開始：Firestore から水やり記録を確認"
 
+          JST_HOUR=$(date -u +"%H" -d "+9 hours")
           TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
           echo "📅 今日の日付（JST）: $TODAY"
+          echo "⏰ 現在のJST時刻: ${JST_HOUR}時"
 
           echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
 
           FIREBASE_CLIENT_EMAIL=$(jq -r '.client_email' service-account.json)
           FIREBASE_PRIVATE_KEY=$(jq -r '.private_key' service-account.json)
 
-          HEADER='{
-            "alg": "RS256",
-            "typ": "JWT"
-          }'
-
+          HEADER='{"alg":"RS256","typ":"JWT"}'
           NOW=$(date +%s)
           EXP=$(($NOW + 3600))
-
           CLAIM='{
             "iss": "'"$FIREBASE_CLIENT_EMAIL"'",
             "sub": "'"$FIREBASE_CLIENT_EMAIL"'",
@@ -44,14 +42,10 @@ jobs:
           }'
 
           b64enc() { openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
-
           JWT_HEADER=$(echo -n "$HEADER" | b64enc)
           JWT_CLAIM=$(echo -n "$CLAIM" | b64enc)
           JWT_UNSIGNED="$JWT_HEADER.$JWT_CLAIM"
-
-          # 🔐 改行を復元して PEM を作成
           echo "$FIREBASE_PRIVATE_KEY" | sed 's/\\n/\n/g' > private_key.pem
-
           JWT_SIGNATURE=$(echo -n "$JWT_UNSIGNED" | openssl dgst -sha256 -sign private_key.pem | b64enc)
           JWT="$JWT_UNSIGNED.$JWT_SIGNATURE"
 
@@ -65,33 +59,43 @@ jobs:
           echo "🔓 アクセストークン取得済み"
 
           FIRESTORE_URL="https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/water-records/$TODAY"
-          echo "📡 Firestore ドキュメント取得: $FIRESTORE_URL"
-
           RESPONSE=$(curl -s -X GET "$FIRESTORE_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN")
 
           echo "🧾 Firestore レスポンス:"
           echo "$RESPONSE" | jq .
 
-          HAS_TIME1=$(echo "$RESPONSE" | jq -r '.fields.time1.stringValue // empty')
-
-          if [ -n "$HAS_TIME1" ]; then
-            echo "✅ 水やり済み記録を確認（time1: $HAS_TIME1）"
+          # 各時間帯で確認対象のフィールドを切り替え
+          if [ "$JST_HOUR" -eq 9 ]; then
+            TIME_FIELD="time1"
+            TIME_LABEL="朝"
+          elif [ "$JST_HOUR" -eq 17 ]; then
+            TIME_FIELD="time2"
+            TIME_LABEL="夕方"
           else
-            echo "❌ time1 が見つかりません！LINEへ通知します。"
+            echo "⚠️ 対象外の時間帯のため処理をスキップ"
+            exit 0
+          fi
 
-             curl -X POST https://api.line.me/v2/bot/message/push \
-               -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
-               -H "Content-Type: application/json" \
-               -d '{
-                 "to": "'"$LINE_GROUP_ID"'",
-                 "messages": [
-                   {
-                     "type": "text",
-                     "text": "⚠️ 本日（'"$TODAY"'）の水やりが未記録です！"
-                   }
-                 ]
-               }'
-               fi
+          TIME_VALUE=$(echo "$RESPONSE" | jq -r ".fields.${TIME_FIELD}.stringValue // empty")
+
+          if [ -n "$TIME_VALUE" ]; then
+            echo "✅ ${TIME_LABEL}の水やり記録あり（${TIME_FIELD}: $TIME_VALUE）"
+          else
+            echo "❌ ${TIME_FIELD} が未記録です！LINEへ通知を送信します。"
+
+            curl -X POST https://api.line.me/v2/bot/message/push \
+              -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "to": "'"$LINE_GROUP_ID"'",
+                "messages": [
+                  {
+                    "type": "text",
+                    "text": "⚠️ 本日（'"$TODAY"'）の'"$TIME_LABEL"'の水やりが未記録です！"
+                  }
+                ]
+              }'
+          fi
 
           echo "✅ 処理完了"
