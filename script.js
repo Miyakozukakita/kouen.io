@@ -17,7 +17,7 @@ const db = getFirestore(app);
 
 let waterTimes = [];
 const maxCount = 10;
-let selectedDate = getTodayStr();
+let selectedDate = getTodayStr();  // 初期は今日
 
 function getTodayStr() {
   const now = new Date();
@@ -50,22 +50,6 @@ async function recordWaterTime() {
   waterTimes.push(timeStr);
   await saveAllTimes();
   renderRecords();
-
-  // ✅ LINE通知を送信
-  fetch("https://us-central1-miyakozuka-89982.cloudfunctions.net/send-line", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: `水やり完了（${selectedDate} - ${timeStr}）`
-    })
-  }).then(res => {
-    if (!res.ok) throw new Error("LINE通知失敗");
-    console.log("✅ LINE通知成功");
-  }).catch(err => {
-    console.error("❌ LINE通知エラー:", err);
-  });
 }
 
 function renderRecords() {
@@ -134,4 +118,38 @@ async function saveAllTimes() {
   }
 
   await updateDoc(docRef, clearData).catch(() => {});
-  await setDoc(docRef, data, { merge
+  await setDoc(docRef, data, { merge: true });
+}
+
+async function loadWaterTimes() {
+  const docRef = doc(db, "water-records", selectedDate);
+  const docSnap = await getDoc(docRef);
+
+  waterTimes = [];
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    for (let i = 1; i <= maxCount; i++) {
+      const key = `time${i}`;
+      if (data[key]) {
+        waterTimes.push(data[key]);
+      }
+    }
+  }
+  renderRecords();
+  displaySelectedDate();
+}
+
+window.onload = () => {
+  const picker = document.getElementById("date-picker");
+  picker.value = selectedDate;
+
+  picker.addEventListener("change", async (e) => {
+    selectedDate = e.target.value;
+    await loadWaterTimes();
+  });
+
+  document.getElementById("water-btn").addEventListener("click", recordWaterTime);
+
+  loadWaterTimes();
+};
