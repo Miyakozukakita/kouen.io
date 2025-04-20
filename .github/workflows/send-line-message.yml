@@ -55,7 +55,8 @@ jobs:
             | jq -r '.access_token')
 
           TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
-          JST_HOUR=$(date -u +"%H" -d "+9 hours")
+          echo 'JST_HOUR=$(date -u +"%H" -d "+9 hours")'
+          JST_HOUR=17
 
           TIME_FIELD="time1"
           TIME_LABEL="午前"
