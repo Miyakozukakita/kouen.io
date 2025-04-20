@@ -162,7 +162,7 @@ window.onload = () => {
 // LINE Messaging API に通知を送信
 async function sendLineMessage(message) {
   try {
-    const res = await fetch("https://miyakozukakita.github.io/notify", {
+    const res = await fetch("https://asia-northeast1-miyakozuka-89982.cloudfunctions.net/notify", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
