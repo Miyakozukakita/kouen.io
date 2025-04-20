@@ -11,9 +11,8 @@ jobs:
     steps:
       - name: Check Firestore and notify LINE
         env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
         run: |
@@ -21,6 +20,11 @@ jobs:
 
           TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
           echo "📅 今日の日付（JST）: $TODAY"
+
+          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
+
+          FIREBASE_CLIENT_EMAIL=$(jq -r '.client_email' service-account.json)
+          FIREBASE_PRIVATE_KEY=$(jq -r '.private_key' service-account.json)
 
           HEADER='{
             "alg": "RS256",
