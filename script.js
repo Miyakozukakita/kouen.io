@@ -176,20 +176,3 @@ async function sendLineMessage(message) {
     console.error("通知エラー:", err);
   }
 }
-
-  const res = await fetch("https://api.line.me/v2/bot/message/push", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${LINE_ACCESS_TOKEN}`
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!res.ok) {
-    const error = await res.text();
-    console.error("LINE送信失敗:", error);
-  } else {
-    console.log("LINE送信成功");
-  }
-}
