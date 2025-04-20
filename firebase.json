@@ -8,10 +8,6 @@
     ],
     "rewrites": [
       {
-        "source": "/data.json",
-        "destination": "/data.html"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
