@@ -54,7 +54,6 @@ async function recordWaterTime() {
   waterTimes.push(timeStr);
   await saveAllTimes();
   renderRecords();
-  await sendLineMessage("水やりしました🌱");
 }
 
 function renderRecords() {
@@ -159,20 +158,3 @@ window.onload = () => {
   loadWaterTimes();
 };
 
-// LINE Messaging API に通知を送信
-async function sendLineMessage(message) {
-  try {
-    const res = await fetch("https://asia-northeast1-miyakozuka-89982.cloudfunctions.net/notify", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message })
-    });
-
-    if (!res.ok) throw new Error("送信失敗");
-    console.log("通知成功");
-  } catch (err) {
-    console.error("通知エラー:", err);
-  }
-}
