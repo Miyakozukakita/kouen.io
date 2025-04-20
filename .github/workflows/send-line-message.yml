@@ -2,7 +2,7 @@ name: LINE Group Morning Message
 
 on:
   schedule:
-    - cron: '24 8 * * *'  # JST 17:16
+    - cron: '30 8 * * *'  # JST 17:16
   workflow_dispatch:
 
 jobs:
