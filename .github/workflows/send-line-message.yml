@@ -2,7 +2,7 @@ name: LINE Water Check Notification
 
 on:
   schedule:
-    - cron: '15 9 * * *'  # JST 9:00
+    - cron: '0 0 * * *'  # JST 9:00
   workflow_dispatch:
 
 jobs:
@@ -17,9 +17,10 @@ jobs:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
         run: |
-          echo "Checking Firestore record for today..."
+          echo "▶ 開始：Firestore から水やり記録を確認"
 
           TODAY=$(date -u +"%Y-%m-%d" -d "+9 hours")
+          echo "📅 今日の日付（JST）: $TODAY"
 
           HEADER='{
             "alg": "RS256",
@@ -45,37 +46,33 @@ jobs:
           JWT_UNSIGNED="$JWT_HEADER.$JWT_CLAIM"
 
           echo "$FIREBASE_PRIVATE_KEY" > private_key.pem
-
           JWT_SIGNATURE=$(echo -n "$JWT_UNSIGNED" | openssl dgst -sha256 -sign private_key.pem | b64enc)
           JWT="$JWT_UNSIGNED.$JWT_SIGNATURE"
+
+          echo "🔑 JWT 作成完了"
 
           ACCESS_TOKEN=$(curl -s -X POST https://oauth2.googleapis.com/token \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$JWT" \
             | jq -r '.access_token')
 
-          FIRESTORE_URL="https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/water-records/$TODAY"
+          echo "🔓 アクセストークン取得済み"
 
-          echo "Checking document: $FIRESTORE_URL"
+          FIRESTORE_URL="https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/water-records/$TODAY"
+          echo "📡 Firestore ドキュメント取得: $FIRESTORE_URL"
+
           RESPONSE=$(curl -s -X GET "$FIRESTORE_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN")
 
+          echo "🧾 Firestore レスポンス:"
           echo "$RESPONSE" | jq .
 
-          if echo "$RESPONSE" | grep -q '"time1"'; then
-            echo "✅ Watering record exists — no need to notify."
+          HAS_TIME1=$(echo "$RESPONSE" | jq -r '.fields.time1.stringValue // empty')
+
+          if [ -n "$HAS_TIME1" ]; then
+            echo "✅ 水やり済み記録を確認（time1: $HAS_TIME1）"
           else
-            echo "❌ No watering record found — sending LINE notification..."
-            curl -X POST https://api.line.me/v2/bot/message/push \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
-              -d '{
-                    "to": "'"$LINE_GROUP_ID"'",
-                    "messages":[
-                      {
-                        "type":"text",
-                        "text":"🌱 本日まだ水やり記録がありません！確認お願いします。"
-                      }
-                    ]
-                  }'
+            echo "❌ time1 が見つかりません！LINEへ通知します。"
           fi
+
+          echo "✅ 処理完了"
