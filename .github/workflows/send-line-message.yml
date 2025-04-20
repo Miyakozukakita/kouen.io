@@ -33,7 +33,7 @@ jobs:
           CLAIM='{
             "iss": "'"$FIREBASE_CLIENT_EMAIL"'",
             "sub": "'"$FIREBASE_CLIENT_EMAIL"'",
-            "aud": "https://oauth2.googleapis.com/token",
+            "aud": "https://firestore.googleapis.com/",
             "iat": '"$NOW"',
             "exp": '"$EXP"',
             "scope": "https://www.googleapis.com/auth/datastore"
