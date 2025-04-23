@@ -155,5 +155,5 @@ window.onload = () => {
 };
 
 document.getElementById("recordAppBtn").addEventListener("click", () => {
-  window.location.href = "https://miyakozukakita.github.io/kouen.io/";
+  window.location.href = "https://miyakozukakita.github.io/calendar.io/";
 });
