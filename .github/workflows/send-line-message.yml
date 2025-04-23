@@ -61,14 +61,22 @@ jobs:
             | jq -r '.access_token')
 
           FIRESTORE_URL="https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/water-records/$TODAY"
-          RESPONSE=$(curl -s -X GET "$FIRESTORE_URL" \
+          HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" -X GET "$FIRESTORE_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN")
 
-          echo "🧾 Firestore レスポンス:"
+          RESPONSE=$(echo "$HTTP_RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+
+          echo "🧾 HTTP ステータス: $HTTP_STATUS"
           echo "$RESPONSE" | jq .
 
-          HAS_TIME1=$(echo "$RESPONSE" | jq -r '.fields.time1.stringValue // empty')
-          HAS_TIME2=$(echo "$RESPONSE" | jq -r '.fields.time2.stringValue // empty')
+          if [ "$HTTP_STATUS" = "404" ]; then
+            HAS_TIME1=""
+            HAS_TIME2=""
+          else
+            HAS_TIME1=$(echo "$RESPONSE" | jq -r '.fields.time1.stringValue // empty')
+            HAS_TIME2=$(echo "$RESPONSE" | jq -r '.fields.time2.stringValue // empty')
+          fi
 
           if [ "$JST_HOUR" -eq 9 ]; then
             if [ -n "$HAS_TIME1" ]; then
@@ -94,11 +102,10 @@ jobs:
             else
               echo "❌ 夕方の水やり記録なし。天気と気温を確認します"
 
-              # 八尾市：緯度経度
               LAT="34.6264"
               LON="135.6009"
-
               WEATHER_RESPONSE=$(curl -s "https://api.open-meteo.com/v1/forecast?latitude=$LAT&longitude=$LON&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo&forecast_days=1")
+
               TEMP_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.temperature_2m[14]')
               WEATHER_CODE_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.weathercode[14]')
 
@@ -122,7 +129,6 @@ jobs:
                     }'
                 else
                   echo "☁️ 暑くない or 晴れじゃない → 水やり不要。LINE通知を送信します"
-
                   curl -X POST https://api.line.me/v2/bot/message/push \
                     -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
                     -H "Content-Type: application/json" \
