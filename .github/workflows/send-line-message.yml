@@ -102,8 +102,8 @@ jobs:
             else
               echo "❌ 夕方の水やり記録なし。天気と気温を確認します"
 
-              LAT="34.6264"
-              LON="135.6009"
+              LAT="34.5973"
+              LON="135.6063"
               WEATHER_RESPONSE=$(curl -s "https://api.open-meteo.com/v1/forecast?latitude=$LAT&longitude=$LON&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo&forecast_days=1")
 
               TEMP_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.temperature_2m[14]')
