@@ -96,7 +96,7 @@ jobs:
                   ]
                 }'
             fi
-          elif [ "$JST_HOUR" -eq 17 ]; then
+          elif [ "$JST_HOUR" -eq 16 ]; then
             if [ -n "$HAS_TIME2" ]; then
               echo "✅ 夕方の水やり（time2）記録あり: $HAS_TIME2"
             else
