@@ -78,7 +78,7 @@ jobs:
             HAS_TIME2=$(echo "$RESPONSE" | jq -r '.fields.time2.stringValue // empty')
           fi
 
-          if [ "$JST_HOUR" -eq 9 ]; then
+          if [[ "$JST_HOUR" -ge 9 && "$JST_HOUR" -le 15 ]]; then
             if [ -n "$HAS_TIME1" ]; then
               echo "✅ 朝の水やり（time1）記録あり: $HAS_TIME1"
             else
