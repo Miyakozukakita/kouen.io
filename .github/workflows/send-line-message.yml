@@ -78,14 +78,59 @@ jobs:
             HAS_TIME2=$(echo "$RESPONSE" | jq -r '.fields.time2.stringValue // empty')
           fi
 
-          if [[ "$JST_HOUR" -ge 9 && "$JST_HOUR" -le 15 ]]; then
+          if [[ "$JST_HOUR" -ge 6 && "$JST_HOUR" -le 15 ]]; then
             if [ -n "$HAS_TIME1" ]; then
               echo "✅ 朝の水やり（time1）記録あり: $HAS_TIME1"
             else
-              echo "❌ 朝の水やり記録なし。LINE通知を送信します"
+              echo "❌ 夕方の水やり記録なし。天気と気温を確認します"
+
+              LAT="34.5973"
+              LON="135.6063"
+              WEATHER_RESPONSE=$(curl -s "https://api.open-meteo.com/v1/forecast?latitude=$LAT&longitude=$LON&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo&forecast_days=1")
+
+              TEMP_AT_9=$(echo "$WEATHER_RESPONSE" | jq '.hourly.temperature_2m[9]')
+              WEATHER_CODE_AT_9=$(echo "$WEATHER_RESPONSE" | jq '.hourly.weathercode[9]')
+
+              echo "🌡️ 9時の気温: ${TEMP_AT_9}℃"
+              echo "🌤️ 9時の天気コード: ${WEATHER_CODE_AT_9}"
+
+              if [ "$TEMP_AT_9" != "null" ] && [ "$WEATHER_CODE_AT_9" != "null" ]; then
+                if [ "$(echo "$TEMP_AT_9 >= 30" | bc)" -eq 1 ] && [[ "$WEATHER_CODE_AT_9" =~ ^(0|1)$ ]]; then
+                  echo "☀️ 暑くて晴れ → 水やりが必要。LINE通知を送信します"
+                  curl -X POST https://api.line.me/v2/bot/message/push \
+                    -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d '{
+                      "to": "'"$LINE_GROUP_ID"'",
+                      "messages": [
+                        {
+                          "type": "text",
+                          "text": "⚠️ 本日（'"$TODAY"'）の朝の水やりが未記録です！気温が'"$TEMP_AT_9"'℃・晴れのため、水やりが必要かもしれません。"
+                        }
+                      ]
+                    }'
+                else
+                  echo "☁️ 暑くない or 晴れじゃない → 水やり不要。LINE通知を送信します"
+                  curl -X POST https://api.line.me/v2/bot/message/push \
+                    -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d '{
+                      "to": "'"$LINE_GROUP_ID"'",
+                      "messages": [
+                        {
+                          "type": "text",
+                          "text": "✅ 本日（'"$TODAY"'）の9時は曇り又は雨 or '"$TEMP_AT_9"'℃以下のため、水やりの必要はありませんでした☀️"
+                        }
+                      ]
+                    }'
+                fi
+              else
+                echo "⚠️ 天気データが取得できなかったため、通知をスキップします"
+              fi
             fi
           elif [ "$JST_HOUR" -ge 16 ]; then
-            if [ -n "$HAS_TIME2" ]; then
+            if [ -n "$HAS_TIME2" ] && [ -n "$HAS_TIME1" ]; then
+              echo "✅ 夕方の水やり（time1）記録あり: $HAS_TIME1"
               echo "✅ 夕方の水やり（time2）記録あり: $HAS_TIME2"
             else
               echo "❌ 夕方の水やり記録なし。天気と気温を確認します"
@@ -93,8 +138,6 @@ jobs:
               LAT="34.5973"
               LON="135.6063"
               WEATHER_RESPONSE=$(curl -s "https://api.open-meteo.com/v1/forecast?latitude=$LAT&longitude=$LON&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo&forecast_days=1")
-              echo https://api.open-meteo.com/v1/forecast?latitude=$LAT&longitude=$LON&hourly=temperature_2m,weathercode&timezone=Asia%2FTokyo&forecast_days=1
-              echo WEATHER_RESPONSE
 
               TEMP_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.temperature_2m[14]')
               WEATHER_CODE_AT_14=$(echo "$WEATHER_RESPONSE" | jq '.hourly.weathercode[14]')
@@ -103,10 +146,34 @@ jobs:
               echo "🌤️ 14時の天気コード: ${WEATHER_CODE_AT_14}"
 
               if [ "$TEMP_AT_14" != "null" ] && [ "$WEATHER_CODE_AT_14" != "null" ]; then
-                if [ "$(echo "$TEMP_AT_14 >= 30" | bc)" -eq 1 ] && [[ "$WEATHER_CODE_AT_14" =~ ^(0|1|2)$ ]]; then
+                if [ "$(echo "$TEMP_AT_14 >= 30" | bc)" -eq 1 ] && [[ "$WEATHER_CODE_AT_14" =~ ^(0|1)$ ]]; then
                   echo "☀️ 暑くて晴れ → 水やりが必要。LINE通知を送信します"
+                  curl -X POST https://api.line.me/v2/bot/message/push \
+                    -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d '{
+                      "to": "'"$LINE_GROUP_ID"'",
+                      "messages": [
+                        {
+                          "type": "text",
+                          "text": "⚠️ 本日（'"$TODAY"'）の夕方の水やりが未記録です！気温が'"$TEMP_AT_14"'℃・晴れのため、水やりが必要かもしれません。"
+                        }
+                      ]
+                    }'
                 else
                   echo "☁️ 暑くない or 晴れじゃない → 水やり不要。LINE通知を送信します"
+                  curl -X POST https://api.line.me/v2/bot/message/push \
+                    -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d '{
+                      "to": "'"$LINE_GROUP_ID"'",
+                      "messages": [
+                        {
+                          "type": "text",
+                          "text": "✅ 本日（'"$TODAY"'）の14時は曇り又は雨 or '"$TEMP_AT_14"'℃以下のため、水やりの必要はありませんでした☀️"
+                        }
+                      ]
+                    }'
                 fi
               else
                 echo "⚠️ 天気データが取得できなかったため、通知をスキップします"
