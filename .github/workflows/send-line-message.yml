@@ -2,7 +2,7 @@ name: LINE Water Check Notification
 
 on:
   schedule:
-    - cron: '0 22 * * *'    # JST 9:00
+    - cron: '0 0 * * *'    # JST 9:00
     - cron: '0 7 * * *'    # JST 17:00
   workflow_dispatch:
     inputs:
@@ -95,8 +95,8 @@ jobs:
               echo "🌤️ 9時の天気コード: ${WEATHER_CODE_AT_9}"
 
               if [ "$TEMP_AT_9" != "null" ] && [ "$WEATHER_CODE_AT_9" != "null" ]; then
-                if [ "$(echo "$TEMP_AT_9 >= 30" | bc)" -eq 1 ] && [[ "$WEATHER_CODE_AT_9" =~ ^(0|1)$ ]]; then
-                  echo "☀️ 暑くて晴れ → 水やりが必要。LINE通知を送信します"
+                if [[ "$WEATHER_CODE_AT_9" =~ ^(0|1)$ ]]; then
+                  echo "☀️ 晴れ → 水やりが必要。LINE通知を送信します"
                   curl -X POST https://api.line.me/v2/bot/message/push \
                     -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
                     -H "Content-Type: application/json" \
@@ -110,7 +110,7 @@ jobs:
                       ]
                     }'
                 else
-                  echo "☁️ 暑くない or 晴れじゃない → 水やり不要。LINE通知を送信します"
+                  echo "☁️ 晴れじゃない → 水やり不要。LINE通知を送信します"
                   curl -X POST https://api.line.me/v2/bot/message/push \
                     -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
                     -H "Content-Type: application/json" \
