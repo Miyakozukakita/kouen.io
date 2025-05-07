@@ -129,7 +129,20 @@ jobs:
               fi
             fi
           elif [ "$JST_HOUR" -ge 16 ]; then
-            if [ -n "$HAS_TIME2" ] && [ -n "$HAS_TIME1" ]; then
+            if [ -z "$HAS_TIME1" ]; then
+              curl -X POST https://api.line.me/v2/bot/message/push \
+                -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "to": "'"$LINE_GROUP_ID"'",
+                  "messages": [
+                    {
+                      "type": "text",
+                      "text": "⚠️ 本日（'"$TODAY"'）の朝の水やりが未記録です！"
+                    }
+                  ]
+                }'
+            elif [ -n "$HAS_TIME2" ] && [ -n "$HAS_TIME1" ]; then
               echo "✅ 夕方の水やり（time1）記録あり: $HAS_TIME1"
               echo "✅ 夕方の水やり（time2）記録あり: $HAS_TIME2"
             else
